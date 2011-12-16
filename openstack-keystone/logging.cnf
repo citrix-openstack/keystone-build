@@ -1,0 +1,40 @@
+[loggers]
+keys=root,keystone,combined
+
+[formatters]
+keys=production,devel
+
+[handlers]
+keys=production,devel
+
+[logger_root]
+level=NOTSET
+handlers=devel
+
+[logger_keystone]
+level=DEBUG
+handlers=devel
+qualname=keystone
+
+[logger_combined]
+level=DEBUG
+handlers=devel
+qualname=keystone-combined
+
+[handler_production]
+class=handlers.SysLogHandler
+level=ERROR
+formatter=production
+args=('/dev/log', handlers.SysLogHandler.LOG_DAEMON)
+
+[handler_devel]
+class=handlers.SysLogHandler
+level=DEBUG
+formatter=devel
+args=('/dev/log', handlers.SysLogHandler.LOG_DAEMON)
+
+[formatter_production]
+format=keystone-%(name)s: %(levelname)s %(message)s
+
+[formatter_devel]
+format=keystone-%(name)s: %(levelname)s %(module)s %(funcName)s %(message)s

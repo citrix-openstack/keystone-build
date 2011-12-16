@@ -1,0 +1,19 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          openstack-keystone-admin
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Stop:      0 1 6
+# Short-Description: Keystone admin server
+# Description:       Keystone admin server.
+### END INIT INFO
+
+# openstack-keystone-admin: Keystone admin server
+#
+# chkconfig: - 90 03
+# description: Keystone admin server.
+
+name="keystone-admin"
+
+. /etc/rc.d/init.d/openstack-keystone-common.sh

@@ -1,0 +1,19 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          openstack-keystone-auth
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Stop:      0 1 6
+# Short-Description: Keystone auth server
+# Description:       Keystone auth server.
+### END INIT INFO
+
+# openstack-keystone-auth: Keystone auth server
+#
+# chkconfig: - 90 03
+# description: Keystone auth server.
+
+name="keystone-auth"
+
+. /etc/rc.d/init.d/openstack-keystone-common.sh

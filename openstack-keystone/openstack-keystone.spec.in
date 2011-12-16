@@ -1,0 +1,94 @@
+Summary: OpenStack Keystone
+Name: openstack-keystone
+Version: @KEYSTONE_VERSION@
+Release: @BUILD_NUMBER@
+License: ASL 2.0
+Vendor: OpenStack, repackaged by Citrix Systems, Inc.
+Group: Applications/System
+URL: https://launchpad.net/keystone
+Source0: %{name}-%{version}-%{release}.tar.gz
+Source1: keystone.conf
+Source2: logging.cnf
+Source4: %{name}-admin.init
+Source5: %{name}-auth.init
+Source6: %{name}-common.sh
+BuildRoot: %{_tmppath}/%{name}
+BuildArch: noarch
+Requires: daemonize, python26-ldap
+
+Requires(post): chkconfig
+Requires(preun): chkconfig
+
+%global _datarootdir /usr/share
+%global _tmpdir /tmp
+%global _sharedstatedir /var/lib
+%global python_sitelib /usr/lib/python2.6/site-packages
+
+%description
+
+%prep
+%setup -q -n openstack-keystone-%{version}
+
+%build
+%{__python} setup.py build
+
+%install
+rm -rf %{buildroot}
+%{__python} setup.py install -O1 --root %{buildroot}
+
+rm -rf %{buildroot}%{python_sitelib}/doc
+rm -rf %{buildroot}%{python_sitelib}/examples
+
+install -d -m 755 %{buildroot}%{_sharedstatedir}/keystone
+install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
+install -d -m 755 %{buildroot}%{_datarootdir}/keystone
+install -d -m 755 %{buildroot}%{_localstatedir}/log/keystone
+install -d -m 755 %{buildroot}%{_localstatedir}/run/keystone
+install -p -D -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/keystone/keystone.conf
+install -p -D -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/keystone/logging.cnf
+install -p -D -m 755 %{SOURCE4} %{buildroot}%{_initrddir}/%{name}-admin
+install -p -D -m 755 %{SOURCE5} %{buildroot}%{_initrddir}/%{name}-auth
+install -p -D -m 755 %{SOURCE6} %{buildroot}%{_initrddir}/%{name}-common.sh
+
+install -d -m 755 %{buildroot}/usr/keystone
+cp -R keystone/content %{buildroot}/usr/keystone
+
+%clean
+rm -rf %{buildroot}
+
+%pre
+getent group keystone >/dev/null || groupadd -r keystone
+getent passwd keystone >/dev/null || \
+useradd -r -g keystone -d %{_sharedstatedir}/keystone -s /sbin/nologin \
+-c "OpenStack Keystone Daemons" keystone
+exit 0
+
+%post
+/sbin/chkconfig --add %{name}-admin
+/sbin/chkconfig --add %{name}-auth
+
+%preun
+if [ $1 = 0 ] ; then
+    /sbin/service %{name}-admin stop >/dev/null 2>&1
+    /sbin/service %{name}-auth stop >/dev/null 2>&1
+    /sbin/chkconfig --del %{name}-admin
+    /sbin/chkconfig --del %{name}-auth
+fi
+
+%files
+%defattr(-,root,root,-)
+%doc LICENSE
+%dir %{_sysconfdir}/keystone
+%dir %attr(0755, keystone, root) %{_localstatedir}/log/keystone
+%dir %attr(0755, keystone, root) %{_localstatedir}/run/keystone
+/usr/keystone
+%{_datarootdir}/keystone
+%{python_sitelib}/keystone
+%{python_sitelib}/keystone-%{version}-*.egg-info
+%{python_sitelib}/tools/*
+%config(noreplace) %{_sysconfdir}/keystone/*
+%{_initrddir}/%{name}*
+%{_bindir}/keystone*
+
+%defattr(-,keystone,keystone,-)
+%{_sharedstatedir}/keystone
