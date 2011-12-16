@@ -3,21 +3,14 @@ IMPORT_BRANDING := yes
 ifdef B_BASE
 include $(B_BASE)/common.mk
 include $(B_BASE)/rpmbuild.mk
+REPO := /repos/keystone-build
+KEYSTONE_UPSTREAM := /repos/keystone
 else
 COMPONENT := keystone
 include ../../mk/easy-config.mk
+REPO := .
+KEYSTONE_UPSTREAM := ../keystone
 endif
-
-REPO := $(call hg_loc,$(COMPONENT))
-VPX_REPO := $(call hg_loc,os-vpx)
-
-
-LP_KEYSTONE_BRANCH ?= lp:keystone/trunk
-
-
-KEYSTONE_UPSTREAM := $(shell test -d /repos/keystone && \
-			     readlink -f /repos/keystone || \
-			     readlink -f $(REPO)/upstream)
 
 
 KEYSTONE_VERSION := $(shell python $(KEYSTONE_UPSTREAM)/setup.py --version)
@@ -91,10 +84,6 @@ $(EPEL_REPOMD_XML): $(wildcard $(EPEL_RPM_DIR)/%)
 	$(call mkdir_clean,$(EPEL_YUM_DIR))
 	cp -s $(EPEL_RPM_DIR)/* $(EPEL_YUM_DIR)
 	createrepo $(EPEL_YUM_DIR)
-
-.PHONY: rebase
-rebase:
-	@sh $(VPX_REPO)/rebase.sh $(LP_KEYSTONE_BRANCH) $(REPO)/upstream
 
 .PHONY: clean
 clean:
