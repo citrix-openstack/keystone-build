@@ -5,11 +5,15 @@ include $(B_BASE)/common.mk
 include $(B_BASE)/rpmbuild.mk
 REPO := /repos/keystone-build
 KEYSTONE_UPSTREAM := /repos/keystone
+KEYSTONECLIENT_UPSTREAM := /repos/python-keystoneclient
+KEYSTONECLIENT_BUILD := /repos/python-keystoneclient-build
 else
 COMPONENT := keystone
 include ../../mk/easy-config.mk
 REPO := .
 KEYSTONE_UPSTREAM := ../keystone
+KEYSTONECLIENT_UPSTREAM := ../python-keystoneclient
+KEYSTONECLIENT_BUILD := ../python-keystoneclient-build
 endif
 
 
@@ -21,6 +25,13 @@ KEYSTONE_RPM_TMP := $(MY_OBJ_DIR)/RPMS/noarch/$(KEYSTONE_FULLNAME).noarch.rpm
 KEYSTONE_TARBALL := $(MY_OBJ_DIR)/SOURCES/$(KEYSTONE_FULLNAME).tar.gz
 KEYSTONE_RPM := $(MY_OUTPUT_DIR)/RPMS/noarch/$(KEYSTONE_FULLNAME).noarch.rpm
 KEYSTONE_SRPM := $(MY_OUTPUT_DIR)/SRPMS/$(KEYSTONE_FULLNAME).src.rpm
+
+KEYSTONECLIENT_VERSION := $(shell python $(KEYSTONECLIENT_UPSTREAM)/setup.py --version)
+KEYSTONECLIENT_FULLNAME := python-keystoneclient-$(KEYSTONECLIENT_VERSION)-$(BUILD_NUMBER)
+KEYSTONECLIENT_SPEC := $(MY_OBJ_DIR)/python-keystoneclient.spec
+KEYSTONECLIENT_TARBALL := $(MY_OBJ_DIR)/SOURCES/$(KEYSTONECLIENT_FULLNAME).tar.gz
+KEYSTONECLIENT_RPM := $(MY_OUTPUT_DIR)/RPMS/noarch/$(KEYSTONECLIENT_FULLNAME).noarch.rpm
+KEYSTONECLIENT_SRPM := $(MY_OUTPUT_DIR)/SRPMS/$(KEYSTONECLIENT_FULLNAME).src.rpm
 
 DEB_KEYSTONE_VERSION := $(shell head -1 $(REPO)/upstream/debian/changelog | \
                           sed -ne 's,^.*(\(.*\)).*$$,\1,p')
@@ -35,7 +46,8 @@ EPEL_REPOMD_XML := $(EPEL_YUM_DIR)/repodata/repomd.xml
 REPOMD_XML := $(MY_OUTPUT_DIR)/repodata/repomd.xml
 
 DEBS := $(KEYSTONE_DEB) $(KEYSTONE_DOC_DEB) $(PYTHON_KEYSTONE_DEB)
-RPMS := $(KEYSTONE_RPM) $(KEYSTONE_SRPM)
+RPMS := $(KEYSTONE_RPM) $(KEYSTONE_SRPM) \
+        $(KEYSTONECLIENT_RPM) $(KEYSTONECLIENT_SRPM)
 OUTPUT := $(RPMS) $(REPOMD_XML)
 
 .PHONY: build
@@ -76,6 +88,25 @@ $(KEYSTONE_TARBALL): $(shell find $(KEYSTONE_UPSTREAM) -type f)
 	mkdir -p $(@D)
 	cp -a $(KEYSTONE_UPSTREAM) $(MY_OBJ_DIR)/openstack-keystone-$(KEYSTONE_VERSION)
 	tar -C $(MY_OBJ_DIR) -czf $@ openstack-keystone-$(KEYSTONE_VERSION)
+
+$(KEYSTONECLIENT_SRPM): $(KEYSTONECLIENT_RPM)
+$(KEYSTONECLIENT_RPM): $(KEYSTONECLIENT_SPEC) $(KEYSTONECLIENT_TARBALL) \
+		       $(shell find $(KEYSTONECLIENT_BUILD) -type f)
+	cp -f $(KEYSTONECLIENT_BUILD)/* $(MY_OBJ_DIR)/SOURCES
+	sh build-keystone.sh $@ $< $(MY_OBJ_DIR)/SOURCES
+
+$(MY_OBJ_DIR)/%.spec: $(KEYSTONECLIENT_BUILD)/%.spec.in
+	mkdir -p $(dir $@)
+	$(call brand,$^) >$@
+	sed -e 's,@KEYSTONECLIENT_VERSION@,$(KEYSTONECLIENT_VERSION),g' -i $@
+
+$(KEYSTONECLIENT_TARBALL): $(shell find $(KEYSTONECLIENT_UPSTREAM) -type f)
+	rm -rf $@ $(MY_OBJ_DIR)/python-keystoneclient-$(KEYSTONECLIENT_VERSION)
+	mkdir -p $(@D)
+	cp -a $(KEYSTONECLIENT_UPSTREAM)/ \
+              $(MY_OBJ_DIR)/python-keystoneclient-$(KEYSTONECLIENT_VERSION)
+	tar -C $(MY_OBJ_DIR) -czf $@ \
+	       python-keystoneclient-$(KEYSTONECLIENT_VERSION)
 
 $(REPOMD_XML): $(RPMS)
 	createrepo $(MY_OUTPUT_DIR)
