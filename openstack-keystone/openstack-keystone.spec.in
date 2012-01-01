@@ -39,6 +39,9 @@ rm -rf %{buildroot}
 rm -rf %{buildroot}%{python_sitelib}/doc
 rm -rf %{buildroot}%{python_sitelib}/examples
 
+# This conflicts with /usr/bin/keystone from python-keystoneclient.
+rm -f %{buildroot}%{_bindir}/keystone
+
 install -d -m 755 %{buildroot}%{_sharedstatedir}/keystone
 install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
 install -d -m 755 %{buildroot}%{_datarootdir}/keystone
